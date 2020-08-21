@@ -4,6 +4,7 @@ use thiserror::Error;
 pub enum Error {
     #[error(transparent)]
     Jira(#[from] goji::Error),
+
     #[error("missing required argument `{0}`")]
     Config(String),
 }

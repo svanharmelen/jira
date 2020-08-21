@@ -21,16 +21,6 @@ macro_rules! flatten {
                     })
                     .sum()
             })
-            .unwrap_or_else(|| {
-                let assignee = $issue
-                    .assignee()
-                    .map(|v| v.display_name)
-                    .unwrap_or("Unassigned".to_owned());
-                $issue
-                    .timetracking()
-                    .and_then(|v| $users.$field(assignee, v.$field))
-                    .unwrap_or(0)
-            })
+            .unwrap_or(0)
     };
 }
-

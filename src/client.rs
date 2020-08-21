@@ -187,22 +187,17 @@ impl Client {
 
         for issue in issues {
             if let Some(assignee) = assignee {
-                if issue
-                    .assignee()
-                    .map(|v| v.display_name)
-                    .unwrap_or("Unassigned".to_owned())
-                    != assignee
-                    && subtasks
-                        .get(&issue.key)
-                        .and_then(|v| {
-                            v.iter().find(|v| {
-                                v.assignee()
-                                    .map(|v| v.display_name)
-                                    .unwrap_or("Unassigned".to_owned())
-                                    == assignee
-                            })
+                if subtasks
+                    .get(&issue.key)
+                    .and_then(|v| {
+                        v.iter().find(|v| {
+                            v.assignee()
+                                .map(|v| v.display_name)
+                                .unwrap_or("Unassigned".to_owned())
+                                == assignee
                         })
-                        .is_none()
+                    })
+                    .is_none()
                 {
                     continue;
                 }
@@ -263,11 +258,12 @@ impl Client {
     }
 
     pub fn report(&self, options: &clap::ArgMatches) -> Result<()> {
-        let (board_id, sprint_id, planning, update) = (
+        let (board_id, sprint_id, planning, update, reset) = (
             options.value_of("board"),
             options.value_of("sprint"),
             options.is_present("planning"),
             options.is_present("update"),
+            options.is_present("reset"),
         );
 
         let board_id = match board_id {
@@ -286,7 +282,7 @@ impl Client {
         };
         let board = self.jira.boards().get(board_id)?;
 
-        let mut filter = match planning {
+        let mut filter = match planning || reset {
             true => vec!["status!=Done".to_owned()],
             false => Vec::new(),
         };
@@ -308,6 +304,30 @@ impl Client {
 
         let issues: Vec<Issue> = self.jira.issues().iter(&board, &search)?.collect();
         let (issues, subtasks) = self.subtasks(issues, None, None);
+
+        if reset {
+            for (_, subtasks) in subtasks.iter() {
+                for subtask in subtasks.iter() {
+                    let mut fields = BTreeMap::new();
+                    fields.insert(
+                        "timetracking".to_owned(),
+                        TimeTracking {
+                            original_estimate: subtask
+                                .timetracking()
+                                .and_then(|v| v.original_estimate_seconds)
+                                .unwrap_or(0)
+                                / 60,
+                            remaining_estimate: subtask
+                                .timetracking()
+                                .and_then(|v| v.original_estimate_seconds)
+                                .unwrap_or(0)
+                                / 60,
+                        },
+                    );
+                    self.jira.issues().edit(&subtask.id, EditIssue { fields })?;
+                }
+            }
+        }
 
         let mut users = Users::new();
         for issue in issues {
@@ -344,13 +364,10 @@ impl Client {
             let mut row = row![
                 assignee,
                 details.assignments(),
-                format!("{:.1}d", details.original_estimate_days())
+                format!("{:.1}d", details.original_estimate_days()),
+                format!("{:.1}d", details.remaining_estimate_days())
             ];
             if !planning {
-                row.insert_cell(
-                    3,
-                    cell!(format!("{:.1}d", details.remaining_estimate_days())),
-                );
                 row.insert_cell(4, cell!(format!("{:.1}d", details.time_spent_days())));
             }
             table.add_row(row);
@@ -438,4 +455,3 @@ impl Client {
         }
     }
 }
-

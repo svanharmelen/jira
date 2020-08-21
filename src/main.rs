@@ -173,7 +173,12 @@ fn main() -> Result<()> {
                         .help("Update estimates and time logged")
                         .short("U")
                         .long("update")
-                        .display_order(1),
+                        .display_order(2),
+                    Arg::with_name("reset")
+                        .help("Reset remaining time for subtasks")
+                        .short("r")
+                        .long("reset")
+                        .display_order(3),
                 ])
                 .display_order(4),
         )
@@ -187,4 +192,3 @@ fn main() -> Result<()> {
         _ => unreachable!(),
     }
 }
-
