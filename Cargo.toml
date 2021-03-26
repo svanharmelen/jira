@@ -1,0 +1,21 @@
+[package]
+name = "jira"
+version = "0.1.1"
+authors = ["Sander van Harmelen <sander@vanharmelen.nl>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+anyhow = "1.0"
+chrono = "0.4"
+clap = "2"
+lazy_static = "1.4"
+prettytable-rs = "0.8"
+term_size = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "1.0"
+
+[dependencies.goji]
+path = "/Users/svanharmelen/workspace/goji"
+version = "*"
