@@ -258,11 +258,10 @@ impl Client {
     }
 
     pub fn report(&self, options: &clap::ArgMatches) -> Result<()> {
-        let (board_id, sprint_id, planning, update, reset) = (
+        let (board_id, sprint_id, planning, reset) = (
             options.value_of("board"),
             options.value_of("sprint"),
             options.is_present("planning"),
-            options.is_present("update"),
             options.is_present("reset"),
         );
 
@@ -331,22 +330,8 @@ impl Client {
 
         let mut users = Users::new();
         for issue in issues {
-            let estimate = flatten!(subtasks, issue, users, original_estimate_seconds);
-            let remaining = flatten!(subtasks, issue, users, remaining_estimate_seconds);
-
-            if update {
-                let mut fields = BTreeMap::new();
-                fields.insert(
-                    "timetracking".to_owned(),
-                    TimeTracking {
-                        original_estimate: estimate / 60,
-                        remaining_estimate: remaining / 60,
-                    },
-                );
-                self.jira.issues().edit(&issue.id, EditIssue { fields })?;
-            }
-
-            // Make sure we also update the time spent.
+            flatten!(subtasks, issue, users, original_estimate_seconds);
+            flatten!(subtasks, issue, users, remaining_estimate_seconds);
             flatten!(subtasks, issue, users, time_spent_seconds);
         }
 
